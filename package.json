@@ -1,0 +1,22 @@
+{
+  "name": "joukko",
+  "version": "1.0.0-beta",
+  "description": "Joukko - a mob programming session helper tool",
+  "main": "src/index.js",
+  "bin": {
+    "joukko": "src/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aristaako/joukko.git"
+  },
+  "author": "Ari Rauhala",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/aristaako/joukko/issues"
+  },
+  "homepage": "https://github.com/aristaako/joukko#readme",
+  "dependencies": {
+    "simple-git": "2.31.0"
+  }
+}
