@@ -31,6 +31,15 @@ const amendCommit = async () => {
   await git.commit(previousCommitMessage, ["--amend", "--no-edit"])
 }
 
+const checkIfBranchExists = async branchName => {
+  const branchExistsLocally = await checkIfBranchExistsLocally(branchName)
+  if (branchExistsLocally) {
+    return true
+  } else {
+    return await checkIfBranchExistsInRemote(branchName)
+  }
+}
+
 const checkIfBranchExistsInRemote = async branchName => {
   const remoteBranches = await getRemoteBranches()
   const branchExists = remoteBranches.all.includes(`origin/${branchName}`)
@@ -47,6 +56,7 @@ const checkoutBranch = async branchName => {
   logGit(`git checkout ${branchName}`)
   await git.checkout(branchName)
 }
+
 const checkoutNewBranch = async branchName => {
   logGit(`git branch ${branchName}`)
   await git.branch([branchName])
@@ -189,6 +199,7 @@ module.exports = {
   addAllFiles,
   addFile,
   amendCommit,
+  checkIfBranchExists,
   checkIfBranchExistsInRemote,
   checkIfBranchExistsLocally,
   checkoutBranch,

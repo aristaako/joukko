@@ -1,6 +1,6 @@
 {
   "name": "joukko",
-  "version": "1.0.0-beta",
+  "version": "1.0.1-beta",
   "description": "Joukko - a mob programming session helper tool",
   "main": "src/index.js",
   "bin": {

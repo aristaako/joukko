@@ -1,12 +1,5 @@
 const {
-  getBranchNameFromRemotePath,
-  getRemoteBranches,
-  improveKnowledgeOfRemoteBranches,
-} = require("../utils/git")
-
-const {
-  askUserForBranchName,
-  askUserInput,
+  askBranchFromExisting,
   checkJoukkoFile,
   checkoutUpToDateBranch,
   createJoukkoBranchFile,
@@ -17,41 +10,6 @@ const {
   log,
   logError,
 } = require("../utils/log")
-
-const askOption = async optionCount => {
-  return await askUserInput("Choose correct branch number")
-    .then(async selection => {
-      const acceptableOptions = [...Array(optionCount).keys()]
-      if (acceptableOptions.includes(parseInt(selection.trim()))) {
-        return selection
-      } else {
-        logError("Invalid selection.")
-        return askOption(optionCount)
-      }
-    })
-}
-
-const askForJoukkoBranchFromExisting = async () => {
-  await improveKnowledgeOfRemoteBranches()
-  const remoteBranches = await getRemoteBranches()
-  const remoteBranchNames = remoteBranches.all.map(remoteBranch => getBranchNameFromRemotePath(remoteBranch))
-  const remoteBranchNamesSorted = remoteBranchNames.sort()
-  const branchNamesWithIndexes = remoteBranchNamesSorted.map((branchName, index) => `[\x1b[32m${index}\x1b[0m]: ${branchName}`)
-  const nextIndex = branchNamesWithIndexes.length
-  const optionCount = branchNamesWithIndexes.length + 1 
-  const branchNamesWithIndexesAndOther = 
-    [
-      ...branchNamesWithIndexes,
-      `[\x1b[32m${nextIndex}\x1b[0m]: Other...`
-    ]
-  branchNamesWithIndexesAndOther.map(branchListing => log(branchListing))
-  const selection = await askOption(optionCount)
-  if (selection == nextIndex) {
-    return await askUserForBranchName()
-  } else {
-    return remoteBranchNamesSorted[selection]
-  }
-}
 
 const abort = (message = "Mob Programming - Reins not taken.") => {
   logError(message)
@@ -71,7 +29,7 @@ const take = async () => {
 
       let joukkoMobBranch
       if (!joukkoFileExists) {
-        joukkoMobBranch = await askForJoukkoBranchFromExisting()
+        joukkoMobBranch = await askBranchFromExisting("Name for the mob branch")
         remoteUpdated = true
       } else {
         joukkoMobBranch = await readJoukkoFileContent()

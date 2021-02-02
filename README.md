@@ -3,6 +3,7 @@
 </h1>
 
 # joukko
+[![npm](https://img.shields.io/npm/v/joukko?style=for-the-badge)](https://www.npmjs.org/package/joukko)
 
 A tool for mob programming sessions using git version control
 
@@ -48,10 +49,36 @@ To start a mob programming session with joukko, the first driver should be runni
 ```
 $ joukko start
 ```
-Starting a mob programming session with joukko begins with a preliminary check to ensure that joukko can actually start the session.  
-First, joukko checks that the directory, where the command is executed, is a git directory. Then joukko checks whether git can detect any changes as joukko cannot start a session if changes exist. Lastly, joukko checks for the existance of a joukko branch file (.joukko.file) that stores the name of the mob programming session git branch. If the file exists, a session has already been started.
 
-After pre-checks, joukko asks user input on what is the name of git branch the mob programming session is focusing and whether the session should be started.
+> Note: Starting a mob session on the default git branch is discouraged and using a feature branch is recommended.
+
+Starting a mob programming session with joukko begins with a preliminary check to ensure that a joukko session can actually be started.  
+First, joukko checks that the directory, where the command is executed, is a git directory. Then joukko checks whether git can detect any changes as joukko cannot start a session if changes exist. 
+
+After pre-checks, joukko checks for the existance of a joukko branch file (.joukko) that stores the name of the mob programming session git branch. 
+
+### Joukko file exists
+If the file exists, a session has already been started and joukko asks the user whether a mob session should be started on another branch. If not, starting a new mob programming session is aborted.  
+If the mob session should be started on another branch, joukko asks user input on what is the name of the git branch the mob programming session is focusing on. Joukko then checks whether the given branch already exists locally or in remote.
+
+#### Branch exists
+If the branch already exists, joukko asks user input on whether the session should be started. Joukko then checkouts the named mob programming branch. When performing a checkout, joukko first ascertains whether the named branch exists in remote. If the branch exists in remote, joukko tries to checkout the remote branch (if a local version of the branch exists, it is removed before checkout). 
+If the branch is not found in remote, a local branch is either created or checked out.
+
+If a joukko file is found after checkout, the session cannot be started as it has already been started on the branch. 
+When joukko file is not found, such a file is created for storing the name of the git branch.
+
+User is then asked to type in a commit message for the initial mob programming commit which will include the joukko branch file. When the initial commit is created, the mob programming session has been started
+
+#### Branch doesn't exist
+If the branch doesn't exist, joukko asks user what is the branch the mob programming session should be based on. Only existing branches are given as options. If the chosen branch is not the current branch, the branch is checked out.
+
+If a joukko file is found on the base branch, user is asked to confirm that the named branch in the joukko file is to be renamed and the mob programming session is to be started. When user confirms session start, a new local branch is created and checked out and the branch name in the joukko file is updated.
+
+If a joukko file is not found on the base branch, user is asked to confirm that the mob programming session is to be started. After confirming session start, a new local branch is created and checked out and a joukko file is created.
+
+### Joukko file doesn't exist
+Joukko asks user input on what is the name of git branch the mob programming session is focusing and whether the session should be started. 
 
 Joukko then checkouts the named mob programming branch. When performing a checkout, joukko first ascertains whether the named branch exists in remote. If the branch exists in remote, joukko tries to checkout the remote branch (if a local version of the branch exists, it is removed before checkout). 
 If the branch cannot be found from remote, a local branch is either created or checked out.
@@ -60,7 +87,6 @@ If a joukko file is found after checkout, the session cannot be started as it ha
 When joukko file is not found, it is created for storing the name of the git branch.
 
 User is then asked to type in a commit message for the initial mob programming commit which will include the joukko branch file. When the initial commit is created, the mob programming session has been started.
-
 
 ## Passing the torch
 
