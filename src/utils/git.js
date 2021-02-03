@@ -179,6 +179,19 @@ const pushTo = async (remote, branch, options = []) => {
   await git.push(remote, branch, options)
 }
 
+const renameBranch = async (newBranchname) => {
+  try {
+    const branchAlreadyExists = await checkIfBranchExists(newBranchname)
+    if (branchAlreadyExists) {
+      throw(`Branch '${newBranchname}' already exists.`)
+    }
+    logGit(`git branch -m ${newBranchname}`)
+    await git.branch(["-m", newBranchname])
+  } catch(error) {
+    throw(error)
+  }
+}
+
 const undoLatestCommit = async () => {
   logGit("git reset HEAD~")
   await git.reset(["HEAD~"])
@@ -220,6 +233,7 @@ module.exports = {
   improveKnowledgeOfRemoteBranches,
   isGitDirectory,
   pushTo,
+  renameBranch,
   undoLatestCommit,
   updateBranchWithPullRebase,
 }

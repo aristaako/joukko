@@ -27,15 +27,16 @@ const {
   improveKnowledgeOfRemoteBranches,
   isGitDirectory,
   pushTo,
+  renameBranch,
   updateBranchWithPullRebase,
   getStatus,
 } = require("../utils/git")
 
-const JOUKKO_BRANCH_FILE = ".joukko"
+const JOUKKO_FILE = ".joukko"
 
 const addJoukkoFileUnderGit = async () => {
   const repoRoot = await getPathForGitRoot()
-  await addFile(`${repoRoot}/${JOUKKO_BRANCH_FILE}`)
+  await addFile(`${repoRoot}/${JOUKKO_FILE}`)
 }
 
 const askBranchFromExisting = async (branchQuestion, allowDefaultAsProposed = false, showOptionOther = true) => {
@@ -101,9 +102,7 @@ const askUserConfirmation = question => {
 }
 
 const askUserForBranchName = async (branchQuestion, allowDefaultAsProposed = false) => {
-  const currentBranch = await getCurrentBranch()
-  const defaultBranch = await getDefaultBranch()
-  const defaultIsCurrent = defaultBranch == currentBranch
+  const defaultIsCurrent = await isCurrentBranchTheDefaultBranch()
   if (!allowDefaultAsProposed && defaultIsCurrent) {
     return await askUserInput(branchQuestion)
   } else {
@@ -195,12 +194,12 @@ const checkIfJoukkoHasAlreadyBeenStarted = async () => {
 const checkJoukkoFile = async () => {
   const joukkoFileExists = await joukkoFileFound()
   if (!joukkoFileExists) {
-    logWarning("Joukko Mob branch file '.joukko' not found.")
+    logWarning("Joukko file '.joukko' not found.")
     return false
   } else {
-    const joukkoFileIsEmpty = await joukkoFileEmpty()
-    if (joukkoFileIsEmpty) {
-      logWarning("Joukko Mob branch file is empty.")
+    const joukkoFileHasBranch = await joukkoFileHasBranchName()
+    if (!joukkoFileHasBranch) {
+      logWarning("Joukko file doesn't contain branch name.")
       return false
     }
   }
@@ -238,7 +237,8 @@ const checkoutUpToDateBranch = async (branchName, remoteUpdated = false) => {
 const createJoukkoBranchFile = async (branchName, silent = false) => {
   try {
     const repoRoot = await getPathForGitRoot()
-    fs.writeFileSync(`${repoRoot}/${JOUKKO_BRANCH_FILE}`, branchName)
+    const branchJson = { branch: branchName }
+    fs.writeFileSync(`${repoRoot}/${JOUKKO_FILE}`, JSON.stringify(branchJson))
     if (!silent) {
       log("Mob branch file created.")
     }
@@ -253,6 +253,12 @@ const isBranchCurrentBranch = async branchName => {
   return branchName === currentBranch 
 }
 
+const isCurrentBranchTheDefaultBranch = async () => {
+  const currentBranch = await getCurrentBranch()
+  const defaultBranch = await getDefaultBranch()
+  return defaultBranch == currentBranch
+}
+
 const joukkoFileEmpty = async () => {
   const joukkoFileContent = await readJoukkoFileContent()
   if (!joukkoFileContent || joukkoFileContent.trim() == "") {
@@ -265,7 +271,7 @@ const joukkoFileEmpty = async () => {
 const joukkoFileFound = async () => {
   const repoRoot = await getPathForGitRoot()
   try {
-    if (fs.existsSync(`${repoRoot}/${JOUKKO_BRANCH_FILE}`)) {
+    if (fs.existsSync(`${repoRoot}/${JOUKKO_FILE}`)) {
       return true
     } else {
       return false
@@ -275,6 +281,22 @@ const joukkoFileFound = async () => {
   }
 }
 
+const joukkoFileHasBranchName = async () => {
+  const joukkoFileContent = await readJoukkoFileContent()
+  if (joukkoFileContent && joukkoFileContent.trim() != "") {
+    try {
+      const joukkoFileJson = JSON.parse(joukkoFileContent)
+      const joukkoBranch = joukkoFileJson.branch
+      if (joukkoBranch && joukkoBranch.trim() != "") {
+        return true
+      } 
+    } catch (e) {
+      return false;
+    }
+  }
+  return false
+}
+
 const preCheckForFinishAndPassOk = async () => {
   const isGit = await isGitDirectory()
   if (!isGit) {
@@ -282,17 +304,40 @@ const preCheckForFinishAndPassOk = async () => {
     logNok("Pre-check")
     return false
   }
-  const joukkoFileExists = await checkJoukkoFile()
-  if (!joukkoFileExists) {
-    logWarning("Joukko branch file not found.")
+  const joukkoFileWithBranchExists = await checkJoukkoFile()
+  if (!joukkoFileWithBranchExists) {
+    logWarning("Joukko branch file with branch not found.")
     logNok("Pre-check")
     return false
   }
-  const joukkoMobBranch = await readJoukkoFileContent()
+  const joukkoMobBranch = await readJoukkoFileBranch()
   const currentBranch = await getCurrentBranch()
 
   if (joukkoMobBranch !== currentBranch) {
     logWarning(`Current branch '${currentBranch}' is different from the mob branch '${joukkoMobBranch}'.`)
+    logNok("Pre-check")
+    return false
+  }
+  logOk("Pre-check")
+  return true
+}
+
+const preCheckForRenameOk = async () => {
+  const isGit = await isGitDirectory()
+  if (!isGit) {
+    logWarning("Directory is not a git directory.")
+    logNok("Pre-check")
+    return false
+  }
+  const currentBranchIsDefaultBranch = await isCurrentBranchTheDefaultBranch()
+  if (currentBranchIsDefaultBranch) {
+    logWarning("Current branch is the default branch. Can't rename.")
+    logNok("Pre-check")
+    return false
+  }
+  const joukkoFileWithBranchExists = await checkJoukkoFile()
+  if (!joukkoFileWithBranchExists) {
+    logWarning("Joukko branch file with branch not found.")
     logNok("Pre-check")
     return false
   }
@@ -347,14 +392,20 @@ const pushToBranch = async (branch, options = []) => {
 
 const pushToMobBranch = async (options = []) => {
   const remote = "origin"
-  const mobBranch = await readJoukkoFileContent()
+  const mobBranch = await readJoukkoFileBranch()
   await pushTo(remote, mobBranch, options)
+}
+
+const readJoukkoFileBranch = async () => {
+  const joukkoFileContent = await readJoukkoFileContent()
+  const joukkoFileJson = JSON.parse(joukkoFileContent)
+  return joukkoFileJson.branch
 }
 
 const readJoukkoFileContent = async () => {
   const repoRoot = await getPathForGitRoot()
   try {
-    const fileContent = fs.readFileSync(`${repoRoot}/${JOUKKO_BRANCH_FILE}`, "utf-8")
+    const fileContent = fs.readFileSync(`${repoRoot}/${JOUKKO_FILE}`, "utf-8")
     return fileContent.trim()
   } catch(err) {
     logError(err)
@@ -393,9 +444,19 @@ const reCheckoutBranchFromRemote = async branchName => {
 const removeJoukkoBranchFile = async () => {
   const repoRoot = await getPathForGitRoot()
   try {
-    fs.unlinkSync(`${repoRoot}/${JOUKKO_BRANCH_FILE}`)
-  } catch(err) {
-    logError(err)
+    fs.unlinkSync(`${repoRoot}/${JOUKKO_FILE}`)
+  } catch(error) {
+    logError(error)
+  }
+}
+
+const renameCurrentJoukkoBranch = async (newBranchname) => {
+  try {
+    await renameBranch(newBranchname)
+    await updateJoukkoBranchFileBranch(newBranchname)
+  } catch(error) {
+    logError("Could not rename current joukko branch.")
+    throw(error)
   }
 }
 
@@ -459,15 +520,17 @@ module.exports = {
   checkoutUpToDateBranch,
   createJoukkoBranchFile,
   isBranchCurrentBranch,
-  joukkoFileEmpty,
   joukkoFileFound,
+  joukkoFileHasBranchName,
   preCheckForFinishAndPassOk,
+  preCheckForRenameOk,
   preCheckForTakeOk,
   preCheckForStartOk,
   pushToBranch,
   pushToMobBranch,
-  readJoukkoFileContent,
+  readJoukkoFileBranch,
   removeJoukkoBranchFile,
+  renameCurrentJoukkoBranch,
   updateBranch,
   updateJoukkoBranchFileBranch,
 }

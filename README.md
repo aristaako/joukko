@@ -35,13 +35,14 @@ Run the tool on command line with one of the listed arguments
 
 ### Arguments
 
-| Name      | Description                                                    |
-|---------- |--------------------------------------------------------------- |
-| start     | starts the mob programming session                             |
-| pass      | makes preparations for the driver swap i.e. 'passes the torch' |
-| take      | sets things up for the new driver i.e. 'takes the reins'       |
-| finish    | finishes the mob programmin session                            |
-| help      | prints help                                                    |
+| Name      | Description                                                     |
+|---------- |---------------------------------------------------------------- |
+| start     | starts the mob programming session                              |
+| pass      | makes preparations for the driver swap i.e. 'passes the torch'  |
+| take      | sets things up for the new driver i.e. 'takes the reins'        |
+| finish    | finishes the mob programmin session                             |
+| rename    | renames current local branch and updates branch in joukko file  |
+| help      | prints help                                                     |
 
 ## Starting the session
 
@@ -127,6 +128,18 @@ $ joukko finish
 As with the other phases, finishing a session also begins with checks. The check for finishing a session includes checks for the git directory, the joukko git branch file and for the current branch being the mob programming branch.
 
 After pre-checks, joukko finds the previous commit message and asks if the user wants to amend new changes to the previous commit or wants to make a new commit. If user wanted to amend changes, joukko amends changes and pushes changes to the mob programming branch with force. Otherwise user is asked to give a commit message before creating the commit and pushing. As this is the last step in the mob programming session, the joukko git branch file is removed before creating the commit.
+
+## Renaming joukko branch
+
+When the current joukko mob session branch is to be renamed, one should run the following command:
+```
+$ joukko rename
+```
+As with the mob programming session workflow, renaming the joukko branch begins with checks. First joukko checks that the current directory is a git directory. Then joukko checks whether the current branch is the same as the default git branch. If the branches match, branch cannot be renamed. Finally joukko checks that there is a joukko file with a branch name in it.
+
+If checks pass, joukko renames the git branch first, the branch name in joukko file second.
+
+> Note: Rename only renames the current local joukko branch. If the branch already exists in a remote repository, it will remain the same there.
 
 ## License
 

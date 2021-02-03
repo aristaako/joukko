@@ -9,10 +9,10 @@ const {
   askUserConfirmation,
   askUserForBranchName,
   askUserInput,
+  checkJoukkoFile,
   checkoutNewLocalBranch,
   checkoutUpToDateBranch,
   createJoukkoBranchFile,
-  joukkoFileFound,
   preCheckForStartOk,
   updateJoukkoBranchFileBranch,
 } = require("../utils/joukko")
@@ -32,8 +32,8 @@ const handleStartWithNewBranch = async (branchName) => {
   const baseBranch = await askBranchFromExisting("Name of the base branch for the mob programming session branch", true, false)
   try {
     await changeToBranch(baseBranch)
-    if (await joukkoFileFound()) {
-      logWarning(`Joukko branch file found on base branch '${baseBranch}'.`)
+    if (await checkJoukkoFile()) {
+      logWarning(`Joukko branch file with branch found on base branch '${baseBranch}'.`)
       const commandConfirmed = await askUserConfirmation(`Rename branch in joukko file and start mob programming session on branch '${branchName}'`)
       if (commandConfirmed) {
         try {
@@ -101,8 +101,8 @@ const handleStartWithExistingJoukkoFile = async () => {
           if (commandConfirmed) {
             try {
               await checkoutUpToDateBranch(branchName)
-              if (await joukkoFileFound()) {
-                return abortSessionStart(`Joukko branch file found. Mob programming session has already been started with branch '${branchName}'.`)
+              if (await checkJoukkoFile()) {
+                return abortSessionStart(`Joukko branch file with branch found. Mob programming session has already been started with branch '${branchName}'.`)
               }
               log("Creating joukko branch file.")
               await createJoukkoBranchFile(branchName)
@@ -132,8 +132,8 @@ const handleStartWithoutExistingJoukkoFile = async () => {
       try {
         await checkoutUpToDateBranch(branchName)
   
-        if (await joukkoFileFound()) {
-          return abortSessionStart(`Joukko branch file found. Mob programming session has already been started with branch '${branchName}'.`)
+        if (await checkJoukkoFile()) {
+          return abortSessionStart(`Joukko branch file with branch found. Mob programming session has already been started with branch '${branchName}'.`)
         }
 
         log("Creating joukko branch file.")
@@ -163,8 +163,8 @@ const start = async () => {
       if (!preCheckIsOk) {
         return abortSessionStart()
       }
-      const joukkoFileExists = await joukkoFileFound()
-      if (joukkoFileExists) {
+      const joukkoFileWithBranchExists = await checkJoukkoFile()
+      if (joukkoFileWithBranchExists) {
         return await handleStartWithExistingJoukkoFile()
       }
       await handleStartWithoutExistingJoukkoFile()

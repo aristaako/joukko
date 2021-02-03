@@ -4,7 +4,7 @@ const {
   checkoutUpToDateBranch,
   createJoukkoBranchFile,
   preCheckForTakeOk,
-  readJoukkoFileContent,
+  readJoukkoFileBranch,
 } = require("../utils/joukko")
 const {
   log,
@@ -24,23 +24,23 @@ const take = async () => {
         return abort()
       }
 
-      const joukkoFileExists = await checkJoukkoFile()
+      const joukkoFileWithBranchExists = await checkJoukkoFile()
       let remoteUpdated = false
 
       let joukkoMobBranch
-      if (!joukkoFileExists) {
+      if (!joukkoFileWithBranchExists) {
         joukkoMobBranch = await askBranchFromExisting("Name for the mob branch")
         remoteUpdated = true
       } else {
-        joukkoMobBranch = await readJoukkoFileContent()
+        joukkoMobBranch = await readJoukkoFileBranch()
       }
 
       try {
         await checkoutUpToDateBranch(joukkoMobBranch, remoteUpdated)
 
-        const joukkoFileExistsAfterCheckout = await checkJoukkoFile()
-        if (!joukkoFileExistsAfterCheckout) {
-          log("Creating joukko branch file.")
+        const joukkoFileWithBranchExistsAfterCheckout = await checkJoukkoFile()
+        if (!joukkoFileWithBranchExistsAfterCheckout) {
+          log("Creating joukko file with branch.")
           await createJoukkoBranchFile(joukkoMobBranch)
         }
 

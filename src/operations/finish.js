@@ -12,7 +12,7 @@ const {
   createJoukkoBranchFile,
   preCheckForFinishAndPassOk,
   pushToBranch,
-  readJoukkoFileContent,
+  readJoukkoFileBranch,
   removeJoukkoBranchFile,
 } = require("../utils/joukko")
 const {
@@ -48,7 +48,7 @@ const finish = async () => {
         const previousCommitMessage = await getPreviousCommitMessage()
         log(`Previous commit message is '${previousCommitMessage}'`)
 
-        const mobBranchName = await readJoukkoFileContent()
+        const mobBranchName = await readJoukkoFileBranch()
 
         const shouldAmend = await askUserConfirmation("Would you like to amend to the previous commit?")
         if (shouldAmend) {
