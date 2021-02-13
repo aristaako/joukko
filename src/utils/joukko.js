@@ -106,6 +106,7 @@ const askUserForBranchName = async (branchQuestion, allowDefaultAsProposed = fal
   if (!allowDefaultAsProposed && defaultIsCurrent) {
     return await askUserInput(branchQuestion)
   } else {
+    const currentBranch = await getCurrentBranch()
     return await askUserInput(branchQuestion, currentBranch)
   }
 }

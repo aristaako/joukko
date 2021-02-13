@@ -95,7 +95,7 @@ After the mob programming session has been started and the first driver has done
 ```
 $ joukko pass
 ```
-When passing the torch to the next driver, joukko starts again with a preliminary check to ensure the command can be run. Joukko checks that it is run on a git directory and that there is a joukko branch file.  If the branch file is missing, driver's turn hasn't been properly initiated and thus it cannot be ended.  
+When passing the torch to the next driver, joukko starts again with a preliminary check to ensure the command can be run. Joukko checks that it is run on a git directory and that there is a joukko branch file with a named mob branch.  If the branch file is missing, driver's turn hasn't been properly initiated and thus it cannot be ended.  
 Joukko also checks that the current git branch is the same as the one named in the joukko branch file. 
 
 After pre-checks, joukko checks if there are changes to be found. If no changes are found, then the user is asked whether the torch is to be passed without any changes.
@@ -127,7 +127,16 @@ $ joukko finish
 ```
 As with the other phases, finishing a session also begins with checks. The check for finishing a session includes checks for the git directory, the joukko git branch file and for the current branch being the mob programming branch.
 
-After pre-checks, joukko finds the previous commit message and asks if the user wants to amend new changes to the previous commit or wants to make a new commit. If user wanted to amend changes, joukko amends changes and pushes changes to the mob programming branch with force. Otherwise user is asked to give a commit message before creating the commit and pushing. As this is the last step in the mob programming session, the joukko git branch file is removed before creating the commit.
+After pre-checks, joukko finds the previous commit message and the mob branch name from the joukko file. Joukko then looks for uncommited changes.
+
+### No changes found
+When joukko doesn't detect changes, joukko removes the joukko branch file and then continues as if changes were found.  
+
+### Changes found
+When joukko detects changes, user is then asked whether the changes should be amended to the previous commit or not.  
+When user wants to amend changes, joukko removes the joukko file and then amends all changes and pushes changes to the mob programming branch with force. If the push fails, joukko file is recreated.
+When the user wants to create a new commit, joukko removes the joukko file and then the user is asked to give a commit message for the new commit before creating the commit and pushing it to the remote. If pushing fails, user is then asked if joukko should try pushing with force. If force pushing fails, or the user decides to not force push, the latest commit is undoed and the missing joukko file is recreated.
+
 
 ## Renaming joukko branch
 

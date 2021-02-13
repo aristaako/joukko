@@ -3,6 +3,7 @@ const git = simpleGit()
 
 const {
   logGit,
+  logGitMessages,
 } = require("../utils/log")
 
 const abortMerge = async () => {
@@ -176,7 +177,11 @@ const isGitDirectory = async () => {
 
 const pushTo = async (remote, branch, options = []) => {
   logGit(`git push ${remote} ${branch} ${options.toString()}`)
-  await git.push(remote, branch, options)
+  const response = await git.push(remote, branch, options)
+  const remoteMessages = response.remoteMessages
+  if (remoteMessages && remoteMessages.all && remoteMessages.all !== []) {
+    logGitMessages(remoteMessages.all)
+  }
 }
 
 const renameBranch = async (newBranchname) => {

@@ -1,6 +1,7 @@
 const {
   checkIfBranchExists,
   createCommit,
+  getCurrentBranch,
 } = require("../utils/git")
 
 const {
@@ -119,7 +120,8 @@ const handleStartWithExistingJoukkoFile = async () => {
         }
       })
   } else {
-    return abortSessionStart(`Mob programming session already started with branch '${branchName}'.`)
+    const currentBranch = await getCurrentBranch()
+    return abortSessionStart(`Mob programming session already started with current branch '${currentBranch}'.`)
   }
 }
 
