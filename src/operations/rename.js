@@ -23,7 +23,7 @@ const rename = async () => {
     try {
       const newBranchName = await askUserInput("New name for the joukko branch")
       await renameCurrentJoukkoBranch(newBranchName)
-    } catch(error) {
+    } catch (error) {
       logError(error)
       return abortSessionRename()
     }

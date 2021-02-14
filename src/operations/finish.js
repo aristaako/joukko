@@ -61,7 +61,7 @@ const finishWithAmend = async (mobBranchName) => {
     await amendCommit()
     log("Forcefully pushing local commits to remote.")
     await pushToBranch(mobBranchName, ["--force"])
-  } catch(error) {
+  } catch (error) {
     logWarning("Failed to forcefully push to remote.")
     await recreateJoukkoBranchFile(mobBranchName)
     throw(error)
@@ -78,14 +78,14 @@ const finishWithNewCommit = async (mobBranchName) => {
       try {
         log("Pushing local commits to remote.")
         await pushToBranch(mobBranchName)
-      } catch(pushError) {
+      } catch (pushError) {
         logWarning("Failed to push to remote. Remote might have been updated since taking the reins.")
         const useTheForce = await askUserConfirmation("Would you like to force push?")
         if (useTheForce) {
           try {
             log("Forcefully pushing local commits to remote.")
             await pushToBranch(mobBranchName, ["--force"])
-          } catch(forcePushError) {
+          } catch (forcePushError) {
             logWarning("Failed to force push to remote.")
             await undoFinishingCommitAndRecreateJoukkoFile(mobBranchName)
             abort()

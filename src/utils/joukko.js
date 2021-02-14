@@ -1,13 +1,9 @@
-const fs = require("fs")
-const readline = require("readline")
-
 const {
-  log,
-  logError,
-  logNok,
-  logOk,
-  logWarning,
-} = require("../utils/log")
+  createFileWithJson,
+  fileExists,
+  readFileContent,
+  removeFile,
+} = require("../utils/file")
 
 const {
   abortRebase,
@@ -31,6 +27,20 @@ const {
   updateBranchWithPullRebase,
   getStatus,
 } = require("../utils/git")
+
+const {
+  log,
+  logError,
+  logNok,
+  logOk,
+  logWarning,
+} = require("../utils/log")
+
+const {
+  getUserConfirmation,
+  getUserInput,
+} = require("..utils/userInput")
+
 
 const JOUKKO_FILE = ".joukko"
 
@@ -80,26 +90,7 @@ const askOption = async optionCount => {
     })
 }
 
-const askUserConfirmation = question => {
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout
-  })
-  return new Promise(resolve => rl.question(`${question} (yes/no): `, answer => {
-    const upperCaseAnswer = answer.toUpperCase()
-    if (["N", "NO"].includes(upperCaseAnswer)) {
-      rl.close()
-      resolve(false)
-    } else if(["Y", "YES"].includes(upperCaseAnswer)) {
-      rl.close()
-      resolve(true)
-    } else {
-      log("Please answer yes or no.")
-      rl.close()
-      askUserConfirmation(question)
-    }
-  }))
-}
+const askUserConfirmation = question => getUserConfirmation(question)
 
 const askUserForBranchName = async (branchQuestion, allowDefaultAsProposed = false) => {
   const defaultIsCurrent = await isCurrentBranchTheDefaultBranch()
@@ -112,25 +103,8 @@ const askUserForBranchName = async (branchQuestion, allowDefaultAsProposed = fal
 }
 
 const askUserInput = (question, defaultInput = "") => {
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout
-  })
   const inputQuestion = question + (defaultInput !== "" ? ` (${defaultInput}): ` : ": ")
-  return new Promise(resolve => rl.question(inputQuestion, userInput => {
-    if (userInput !== null && userInput.trim() !== "") {
-      rl.close()
-      resolve(userInput)
-    } else {
-      if (defaultInput !== "") {
-        rl.close()
-        resolve(defaultInput)
-      } else {
-        log("Invalid input.")
-        askUserInput(question)
-      }
-    }
-  }))
+  return getUserInput(inputQuestion, defaultInput)
 }
 
 const changeToBranch = async (branchName = "") => {
@@ -239,11 +213,11 @@ const createJoukkoBranchFile = async (branchName, silent = false) => {
   try {
     const repoRoot = await getPathForGitRoot()
     const branchJson = { branch: branchName }
-    fs.writeFileSync(`${repoRoot}/${JOUKKO_FILE}`, JSON.stringify(branchJson))
+    createFileWithJson(repoRoot, JOUKKO_FILE, JSON.stringify(branchJson))
     if (!silent) {
       log("Mob branch file created.")
     }
-  } catch(error) {
+  } catch (error) {
     logWarning("Could not create mob branch file.")
     throw(error)
   }
@@ -272,12 +246,8 @@ const joukkoFileEmpty = async () => {
 const joukkoFileFound = async () => {
   const repoRoot = await getPathForGitRoot()
   try {
-    if (fs.existsSync(`${repoRoot}/${JOUKKO_FILE}`)) {
-      return true
-    } else {
-      return false
-    }
-  } catch(err) {
+    return fileExists(repoRoot, JOUKKO_FILE)
+  } catch (error) {
     return false
   }
 }
@@ -291,7 +261,7 @@ const joukkoFileHasBranchName = async () => {
       if (joukkoBranch && joukkoBranch.trim() != "") {
         return true
       } 
-    } catch (e) {
+    } catch (error) {
       return false;
     }
   }
@@ -406,9 +376,8 @@ const readJoukkoFileBranch = async () => {
 const readJoukkoFileContent = async () => {
   const repoRoot = await getPathForGitRoot()
   try {
-    const fileContent = fs.readFileSync(`${repoRoot}/${JOUKKO_FILE}`, "utf-8")
-    return fileContent.trim()
-  } catch(err) {
+    return readFileContent(repoRoot, JOUKKO_FILE)
+  } catch (err) {
     logError(err)
   }
 }
@@ -429,14 +398,14 @@ const reCheckoutBranchFromRemote = async branchName => {
       try {
         log(`Removing local branch '${branchName}'.`)
         await deleteBranch(branchName)
-      } catch(deleteError) {
+      } catch (deleteError) {
         logError(`Could not remove local branch '${branchName}'.`)
         throw(deleteError)
       }
     }
     log(`Checking out '${branchName}' from remote.`)
     await checkoutBranch(branchName)
-  } catch(error) {
+  } catch (error) {
     logError("Could not re-checkout branch.")
     throw(error)
   }
@@ -445,8 +414,8 @@ const reCheckoutBranchFromRemote = async branchName => {
 const removeJoukkoBranchFile = async () => {
   const repoRoot = await getPathForGitRoot()
   try {
-    fs.unlinkSync(`${repoRoot}/${JOUKKO_FILE}`)
-  } catch(error) {
+    removeFile(repoRoot, JOUKKO_FILE)
+  } catch (error) {
     logError(error)
   }
 }
@@ -455,7 +424,7 @@ const renameCurrentJoukkoBranch = async (newBranchname) => {
   try {
     await renameBranch(newBranchname)
     await updateJoukkoBranchFileBranch(newBranchname)
-  } catch(error) {
+  } catch (error) {
     logError("Could not rename current joukko branch.")
     throw(error)
   }
@@ -479,7 +448,7 @@ const updateBranch = async (branchName, remoteAlreadyUpdated = false) => {
           try {
             await abortRebase()
             log("Rebase aborted")
-          } catch(rebaseAbortError) {
+          } catch (rebaseAbortError) {
             logWarning("Could not abort rebase.") 
           }
           const confirmQuestion = `Would you like to remove the current local branch and checkout from remote?`

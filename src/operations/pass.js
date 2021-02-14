@@ -36,7 +36,7 @@ const passWithAmend = async () => {
     await amendCommit()
     log("Forcefully pushing local commits to remote.")
     await pushToMobBranch(["--force"])
-  } catch(error) {
+  } catch (error) {
     logWarning("Failed to forcefully push to remote.")
     throw(error)
   }
@@ -51,14 +51,14 @@ const passWithNewCommit = async () => {
       try {
         log("Pushing local commits to remote.")
         await pushToMobBranch()
-      } catch(pushError) {
+      } catch (pushError) {
         logWarning("Failed to push to remote. Remote might have been updated since taking the reins.")
         const useTheForce = await askUserConfirmation("Would you like to force push?")
         if (useTheForce) {
           try {
             log("Forcefully pushing local commits to remote.")
             await pushToMobBranch(["--force"])
-          } catch(forcePushError) {
+          } catch (forcePushError) {
             logWarning("Failed to force push to remote.")
             log("Undoing latest commit.")
             await undoLatestCommit()
@@ -101,7 +101,7 @@ const pass = async () => {
         }
         log("")
         log("Mob programming torch successfully passed with joukko.")
-      } catch(error) {
+      } catch (error) {
         logError("Torch passing failed.")
         logError(error)
         return abort()

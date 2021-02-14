@@ -41,7 +41,7 @@ const handleStartWithNewBranch = async (branchName) => {
           await checkoutNewLocalBranch(branchName)
           await updateJoukkoBranchFileBranch(branchName)
           return await finishSuccessfulStart()
-        } catch(error) {
+        } catch (error) {
           logError("Session starting failed.")
           logError(error)
           return abortSessionStart()
@@ -57,7 +57,7 @@ const handleStartWithNewBranch = async (branchName) => {
           log("Creating joukko branch file.")
           await createJoukkoBranchFile(branchName)
           return await finishSuccessfulStart()
-        } catch(error) {
+        } catch (error) {
           logError("Session starting failed.")
           logError(error)
           return abortSessionStart()
@@ -66,7 +66,7 @@ const handleStartWithNewBranch = async (branchName) => {
         return abortSessionStart()
       }
     }
-  } catch(error) {
+  } catch (error) {
     return abortSessionStart(`Could not start mob session on another branch. ${error}`)  
   }
 }
@@ -109,7 +109,7 @@ const handleStartWithExistingJoukkoFile = async () => {
               await createJoukkoBranchFile(branchName)
 
               return await finishSuccessfulStart()
-            } catch(error) {
+            } catch (error) {
               logError("Session starting failed.")
               logError(error)
               return abortSessionStart()
@@ -147,7 +147,7 @@ const handleStartWithoutExistingJoukkoFile = async () => {
         log("Mob programming session successfully started with joukko.")
 
         return "Mob programming session started with joukko."
-      } catch(error) {
+      } catch (error) {
         logError("Session starting failed.")
         logError(error)
         return abortSessionStart()

@@ -192,7 +192,7 @@ const renameBranch = async (newBranchname) => {
     }
     logGit(`git branch -m ${newBranchname}`)
     await git.branch(["-m", newBranchname])
-  } catch(error) {
+  } catch (error) {
     throw(error)
   }
 }
