@@ -75,10 +75,6 @@ const deleteBranch = async branchName => {
   await git.deleteLocalBranch(branchName, true)
 }
 
-const getBranchNameFromRemotePath = remotePath => {
-  return remotePath.split("/").pop()
-}
-
 const getCurrentBranch = async () => {
   const branchLocal = await git.branchLocal()
   const currentBranch = branchLocal.current
@@ -224,7 +220,6 @@ module.exports = {
   checkoutNewBranch,
   createCommit,
   deleteBranch,
-  getBranchNameFromRemotePath,
   getCurrentBranch,
   getDefaultBranch,
   getGitLog,

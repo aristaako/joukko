@@ -1,4 +1,5 @@
 const {
+  abort,
   askUserInput,
   preCheckForRenameOk,
   renameCurrentJoukkoBranch,
@@ -10,24 +11,25 @@ const {
 
 const abortSessionRename = (message = "Local joukko branch not renamed.") => {
   log(message)
-  return ""
+  return abort(message)
 }
 
 const rename = async () => {
   log("Renaming current local joukko mob programming branch.")
-  await preCheckForRenameOk()
-  .then(async preCheckIsOk => {
-    if (!preCheckIsOk) {
-      return abortSessionRename()
-    }
-    try {
-      const newBranchName = await askUserInput("New name for the joukko branch")
-      await renameCurrentJoukkoBranch(newBranchName)
-    } catch (error) {
-      logError(error)
-      return abortSessionRename()
-    }
-  })
+  return await preCheckForRenameOk()
+    .then(async preCheckIsOk => {
+      if (!preCheckIsOk) {
+        return abortSessionRename()
+      }
+      try {
+        const newBranchName = await askUserInput("New name for the joukko branch")
+        await renameCurrentJoukkoBranch(newBranchName)
+        log(`Local joukko branch renamed to '${newBranchName}'.`)
+      } catch (error) {
+        logError(error)
+        return abortSessionRename()
+      }
+    })
 }
 
 module.exports = { rename }

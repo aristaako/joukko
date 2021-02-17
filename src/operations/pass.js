@@ -8,6 +8,7 @@ const {
   hasUntracked,
 } = require("../utils/git")
 const {
+  abort,
   askUserConfirmation,
   askUserInput,
   preCheckForFinishAndPassOk,
@@ -19,14 +20,19 @@ const {
   logWarning,
 } = require("../utils/log")
 
-const abort = (message = "Mob programming torch not passed.") => {
-  logError(message)
-  return ""
+const abortTorchPass = () => {
+  return abort("Mob programming torch not passed.")
 }
 
 const addChangesToStaging = async () => {
   log("Adding all changes to staging area.")
   await addAllFiles()
+}
+
+const finishSuccessfulPass = () => {
+  log("")
+  log("Mob programming torch successfully passed with joukko.")
+  return "Mob programming torch passed with joukko."
 }
 
 const passWithAmend = async () => {
@@ -43,7 +49,7 @@ const passWithAmend = async () => {
 }
 
 const passWithNewCommit = async () => {
-  await askUserInput("New commit message before passing the torch")
+  return await askUserInput("New commit message before passing the torch")
     .then(async commitMessage => {
       await addChangesToStaging()
       log("Creating new commit.")
@@ -62,12 +68,12 @@ const passWithNewCommit = async () => {
             logWarning("Failed to force push to remote.")
             log("Undoing latest commit.")
             await undoLatestCommit()
-            abort()
+            throw(forcePushError)
           }
         } else {
           log("Undoing latest commit.")
           await undoLatestCommit()
-          abort()
+          throw("Failed to push to remote.")
         }
       }
     })
@@ -75,10 +81,10 @@ const passWithNewCommit = async () => {
 
 const pass = async () => {
   log("Passing the torch with joukko.")
-  await preCheckForFinishAndPassOk()
+  return await preCheckForFinishAndPassOk()
     .then(async preCheckIsOk => {
       if (!preCheckIsOk) {
-        return abort()
+        return abortTorchPass()
       }
 
       const changes = await hasChanges()
@@ -87,7 +93,7 @@ const pass = async () => {
         logWarning("No changes or untracked files found.")
         const passIntended = await askUserConfirmation("Are you sure you want to pass the torch without any uncommited changes?")
         if (!passIntended) {
-          return abort()
+          return abortTorchPass()
         } 
       }
       try {
@@ -99,12 +105,11 @@ const pass = async () => {
         } else {
           await passWithNewCommit()
         }
-        log("")
-        log("Mob programming torch successfully passed with joukko.")
+        return finishSuccessfulPass()
       } catch (error) {
         logError("Torch passing failed.")
         logError(error)
-        return abort()
+        return abortTorchPass()
       }
     })
 }

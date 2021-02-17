@@ -1,4 +1,5 @@
 const {
+  abort,
   askBranchFromExisting,
   checkJoukkoFile,
   checkoutUpToDateBranch,
@@ -11,31 +12,36 @@ const {
   logError,
 } = require("../utils/log")
 
-const abort = (message = "Mob Programming - Reins not taken.") => {
-  logError(message)
-  return ""
+const abortTakingTheReins = () => {
+  return abort("Mob Programming - Reins not taken.")
+}
+
+const finishSuccessfulTake = () => {
+  log("")
+  log("Mob Programming - Reins successfully taken with joukko.")
+  return "Mob Programming - Reins successfully taken with joukko."
 }
 
 const take = async () => {
   log("Taking the reins with joukko.")
-  await preCheckForTakeOk()
+  return await preCheckForTakeOk()
     .then(async preCheckIsOk => {
       if (!preCheckIsOk) {
-        return abort()
+        return abortTakingTheReins()
       }
 
       const joukkoFileWithBranchExists = await checkJoukkoFile()
       let remoteUpdated = false
 
       let joukkoMobBranch
-      if (!joukkoFileWithBranchExists) {
-        joukkoMobBranch = await askBranchFromExisting("Name for the mob branch")
-        remoteUpdated = true
-      } else {
-        joukkoMobBranch = await readJoukkoFileBranch()
-      }
-
       try {
+        if (!joukkoFileWithBranchExists) {
+          joukkoMobBranch = await askBranchFromExisting("Name for the mob branch")
+          remoteUpdated = true
+        } else {
+          joukkoMobBranch = await readJoukkoFileBranch()
+        }
+
         await checkoutUpToDateBranch(joukkoMobBranch, remoteUpdated)
 
         const joukkoFileWithBranchExistsAfterCheckout = await checkJoukkoFile()
@@ -44,12 +50,11 @@ const take = async () => {
           await createJoukkoBranchFile(joukkoMobBranch)
         }
 
-        log("")
-        log("Mob Programming - Reins successfully taken with joukko.")
+        return finishSuccessfulTake()
       } catch (error) {
         logError("Taking the reins failed.")
         logError(error)
-        return abort()
+        return abortTakingTheReins()
       }
       
     })

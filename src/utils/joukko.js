@@ -3,7 +3,7 @@ const {
   fileExists,
   readFileContent,
   removeFile,
-} = require("../utils/file")
+} = require("./file")
 
 const {
   abortRebase,
@@ -13,7 +13,6 @@ const {
   checkoutBranch,
   checkoutNewBranch,
   deleteBranch,
-  getBranchNameFromRemotePath,
   getCurrentBranch,
   getDefaultBranch,
   getPathForGitRoot,
@@ -26,7 +25,7 @@ const {
   renameBranch,
   updateBranchWithPullRebase,
   getStatus,
-} = require("../utils/git")
+} = require("./git")
 
 const {
   log,
@@ -34,24 +33,31 @@ const {
   logNok,
   logOk,
   logWarning,
-} = require("../utils/log")
+} = require("./log")
 
 const {
   getUserConfirmation,
   getUserInput,
-} = require("..utils/userInput")
+} = require("./userInput")
 
 
 const JOUKKO_FILE = ".joukko"
+
+const abort = message => {
+  logError(message)
+  return ""
+}
 
 const addJoukkoFileUnderGit = async () => {
   const repoRoot = await getPathForGitRoot()
   await addFile(`${repoRoot}/${JOUKKO_FILE}`)
 }
 
-const askBranchFromExisting = async (branchQuestion, allowDefaultAsProposed = false, showOptionOther = true) => {
-  await improveKnowledgeOfRemoteBranches()
-  const remoteBranches = await getRemoteBranches()
+const getBranchNameFromRemotePath = remotePath => {
+  return remotePath.split("/").pop()
+}
+
+const getBranchNamesForListing = (remoteBranches, showOptionOther) => {
   const remoteBranchNames = remoteBranches.all.map(remoteBranch => getBranchNameFromRemotePath(remoteBranch))
   const remoteBranchNamesSorted = remoteBranchNames.sort()
   const branchNamesWithIndexes = remoteBranchNamesSorted.map((branchName, index) => `[\x1b[32m${index}\x1b[0m]: ${branchName}`)
@@ -68,8 +74,16 @@ const askBranchFromExisting = async (branchQuestion, allowDefaultAsProposed = fa
   } else {
     branchNamesForListing = branchNamesWithIndexes
   }
+  return branchNamesForListing
+}
+
+const askBranchFromExisting = async (branchQuestion, allowDefaultAsProposed = false, showOptionOther = true) => {
+  await improveKnowledgeOfRemoteBranches()
+  const remoteBranches = await getRemoteBranches()
+  const branchNamesForListing = getBranchNamesForListing(remoteBranches, showOptionOther)
   branchNamesForListing.map(branchListing => log(branchListing))
-  const selection = await askOption(optionCount)
+  const branchNameOptionCount = branchNamesForListing.length
+  const selection = await askOption(branchNameOptionCount)
   if (selection == nextIndex) {
     return await askUserForBranchName(branchQuestion, allowDefaultAsProposed)
   } else {
@@ -77,11 +91,17 @@ const askBranchFromExisting = async (branchQuestion, allowDefaultAsProposed = fa
   }
 }
 
+const isSelectedOptionValid = (selection, optionCount) => {
+  const acceptableOptions = [...Array(optionCount).keys()]
+  const selectedOption = parseInt(selection.trim())
+  return acceptableOptions.includes(selectedOption)
+}
+
 const askOption = async optionCount => {
   return await askUserInput("Choose correct branch number")
     .then(async selection => {
-      const acceptableOptions = [...Array(optionCount).keys()]
-      if (acceptableOptions.includes(parseInt(selection.trim()))) {
+      const selectionValid = isSelectedOptionValid(selection, optionCount)
+      if (selectionValid) {
         return selection
       } else {
         logError("Invalid selection.")
@@ -108,10 +128,10 @@ const askUserInput = (question, defaultInput = "") => {
 }
 
 const changeToBranch = async (branchName = "") => {
-  const currentBranch = await getCurrentBranch()
   if (branchName === "") {
     throw("Branch name is empty.")
   }
+  const currentBranch = await getCurrentBranch()
   if (branchName !== currentBranch) {
     log(`Branch '${currentBranch}' is the current branch. Checking out the branch '${branchName}'.`)
     await checkoutBranch(branchName)
@@ -121,11 +141,11 @@ const changeToBranch = async (branchName = "") => {
 }
 
 const changeToDefaultBranch = async () => {
-  const currentBranch = await getCurrentBranch()
   const defaultBranch = await getDefaultBranch()
   if (defaultBranch === "") {
     throw("No default branch found.")
   }
+  const currentBranch = await getCurrentBranch()
   if (defaultBranch !== currentBranch) {
     log(`Branch '${currentBranch}' is the current branch. Checking out the default branch '${defaultBranch}'.`)
     await checkoutBranch(defaultBranch)
@@ -134,8 +154,14 @@ const changeToDefaultBranch = async () => {
   }
 }
 
-const changeToJoukkoMobBranch = async (joukkoMobBranch, remoteAlreadyUpdated = false) => {
+const changeToJoukkoMobBranch = async (joukkoMobBranch = "", remoteAlreadyUpdated = false) => {
+  if (joukkoMobBranch === "") {
+    throw("No joukko mob branch given.")
+  }
   const currentBranch = await getCurrentBranch()
+  if (joukkoMobBranch === currentBranch) {
+    throw("Current branch is the joukko mob branch.")
+  }
   log(`Current branch '${currentBranch}' is different from the mob branch '${joukkoMobBranch}'.`)
   const joukkoMobBranchExistsLocally = await checkIfBranchExistsLocally(joukkoMobBranch)
   if (joukkoMobBranchExistsLocally) {
@@ -151,19 +177,13 @@ const changeToJoukkoMobBranch = async (joukkoMobBranch, remoteAlreadyUpdated = f
     }
     const joukkoMobBranchExistsInRemote = await checkIfBranchExistsInRemote(joukkoMobBranch)
     if (joukkoMobBranchExistsInRemote) {
-      log(`Mob branch '${joukkoMobBranch}' found in origin. Checking out.`)
+      log(`Mob branch '${joukkoMobBranch}' found in remote. Checking out.`)
       await checkoutBranch(joukkoMobBranch)
     } else {
-      log(`Mob branch '${joukkoMobBranch}' doesn't exist in origin. Creating the branch.`)
+      log(`Mob branch '${joukkoMobBranch}' doesn't exist in remote. Creating the branch.`)
       await checkoutNewBranch(joukkoMobBranch)
     }
   }
-}
-
-const checkIfJoukkoHasAlreadyBeenStarted = async () => {
-  const previousCommitAddedFiles = await getPreviousCommitAddedFiles()
-  console.log("checkIfJoukkoHasAlreadyBeenStarted ~ previousCommitAddedFiles", previousCommitAddedFiles)
-  return true
 }
 
 const checkJoukkoFile = async () => {
@@ -203,7 +223,7 @@ const checkoutUpToDateBranch = async (branchName, remoteUpdated = false) => {
         log(`Branch '${branchName}' found locally. Checking it out.`)
         await checkoutBranch(branchName)
       } else {
-        await checkoutNewLocalBranch()
+        await checkoutNewLocalBranch(branchName)
       }
     }
   }
@@ -368,25 +388,39 @@ const pushToMobBranch = async (options = []) => {
 }
 
 const readJoukkoFileBranch = async () => {
-  const joukkoFileContent = await readJoukkoFileContent()
-  const joukkoFileJson = JSON.parse(joukkoFileContent)
-  return joukkoFileJson.branch
+  try {
+    const joukkoFileContent = await readJoukkoFileContent()
+    if (joukkoFileContent && joukkoFileContent.trim() != "") {
+      const joukkoFileJson = JSON.parse(joukkoFileContent)
+      const joukkoBranch = joukkoFileJson.branch
+      if (joukkoBranch && joukkoBranch.trim() != "") {
+        return joukkoFileJson.branch
+      } else {
+        throw("No branch name in joukko file.")
+      }
+    } else {
+      throw("Joukko file is empty.")
+    }
+  } catch (error) {
+    logError(error)
+    throw("Could not read branch from joukko file.")
+  }
 }
 
 const readJoukkoFileContent = async () => {
   const repoRoot = await getPathForGitRoot()
   try {
     return readFileContent(repoRoot, JOUKKO_FILE)
-  } catch (err) {
-    logError(err)
+  } catch (error) {
+    logError(error)
   }
 }
 
 const reCheckoutBranchFromRemote = async branchName => {
   const branchIsCurrentBranch = await isBranchCurrentBranch(branchName)
+  const defaultBranch = await getDefaultBranch()
   try {
     if (branchIsCurrentBranch) {
-      const defaultBranch = await getDefaultBranch()
       if (defaultBranch !== "" && defaultBranch !== branchName) {
         log(`Branch '${branchName}' is the current branch. Checking out the default branch '${defaultBranch}'.`)
         await checkoutBranch(defaultBranch)
@@ -395,12 +429,16 @@ const reCheckoutBranchFromRemote = async branchName => {
       }
     }
     if (branchIsCurrentBranch || await checkIfBranchExistsLocally(branchName)) {
-      try {
-        log(`Removing local branch '${branchName}'.`)
-        await deleteBranch(branchName)
-      } catch (deleteError) {
-        logError(`Could not remove local branch '${branchName}'.`)
-        throw(deleteError)
+      if (defaultBranch !== "" && defaultBranch === branchName) {
+        throw("The given branch is the default branch. Can't remove the branch.")
+      } else {
+        try {
+          log(`Removing local branch '${branchName}'.`)
+          await deleteBranch(branchName)
+        } catch (deleteError) {
+          logError(`Could not remove local branch '${branchName}'.`)
+          throw(deleteError)
+        }
       }
     }
     log(`Checking out '${branchName}' from remote.`)
@@ -449,14 +487,16 @@ const updateBranch = async (branchName, remoteAlreadyUpdated = false) => {
             await abortRebase()
             log("Rebase aborted")
           } catch (rebaseAbortError) {
-            logWarning("Could not abort rebase.") 
+            logWarning("Could not abort rebase.")
+            throw(rebaseAbortError)
           }
           const confirmQuestion = `Would you like to remove the current local branch and checkout from remote?`
           const confirmRemoval = await askUserConfirmation(confirmQuestion)
           if (confirmRemoval) {
-            reCheckoutBranchFromRemote()
+            await reCheckoutBranchFromRemote(branchName)
+            log(`Branch '${branchName}' updated.`)
           } else {
-            throw(error)
+            throw("Not removing the local branch or checkout from remote")            
           }
         } else {
           log("Branch update failed.")
@@ -465,7 +505,7 @@ const updateBranch = async (branchName, remoteAlreadyUpdated = false) => {
         }
       }
   } else {
-    log(`Branch '${branchName}' doesn't exist in origin. Not updating.`)
+    log(`Branch '${branchName}' doesn't exist in remote. Not updating.`)
   }
 }
 
@@ -476,20 +516,26 @@ const updateJoukkoBranchFileBranch = async (branchName) => {
 }
 
 module.exports = {
+  abort,
   addJoukkoFileUnderGit,
   askBranchFromExisting,
+  askOption,
   askUserConfirmation,
   askUserForBranchName,
   askUserInput,
   changeToBranch,
   changeToDefaultBranch,
   changeToJoukkoMobBranch,
-  checkIfJoukkoHasAlreadyBeenStarted,
   checkJoukkoFile,
   checkoutNewLocalBranch,
   checkoutUpToDateBranch,
   createJoukkoBranchFile,
+  getBranchNamesForListing,
+  getBranchNameFromRemotePath,
   isBranchCurrentBranch,
+  isCurrentBranchTheDefaultBranch,
+  isSelectedOptionValid,
+  joukkoFileEmpty,
   joukkoFileFound,
   joukkoFileHasBranchName,
   preCheckForFinishAndPassOk,
@@ -499,6 +545,8 @@ module.exports = {
   pushToBranch,
   pushToMobBranch,
   readJoukkoFileBranch,
+  readJoukkoFileContent,
+  reCheckoutBranchFromRemote,
   removeJoukkoBranchFile,
   renameCurrentJoukkoBranch,
   updateBranch,

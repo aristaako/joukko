@@ -18,5 +18,11 @@
   "homepage": "https://github.com/aristaako/joukko#readme",
   "dependencies": {
     "simple-git": "2.31.0"
+  },
+  "scripts": {
+    "test": "jest"
+  },
+  "devDependencies": {
+    "jest": "^26.6.3"
   }
 }

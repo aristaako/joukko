@@ -9,6 +9,7 @@ const {
 } = require("../utils/git")
 
 const {
+  abort,
   askUserConfirmation,
   askUserInput,
   checkJoukkoFile,
@@ -24,9 +25,8 @@ const {
   logWarning,
 } = require("../utils/log")
 
-const abort = (message = "Mob programming session not finished.") => {
-  logError(message)
-  return ""
+const abortSessionFinish = () => {
+  return abort("Mob programming session not finished.")
 }
 
 const addChangesToStaging = async () => {
@@ -53,23 +53,34 @@ const undoFinishingCommitAndRecreateJoukkoFile = async (mobBranchName) => {
   await recreateJoukkoBranchFile(mobBranchName)
 }
 
+const undoFinishingCommit = async () => {
+  log("Undoing latest commit.")
+  await undoLatestCommit()
+}
+
+const finishSuccessfulFinish = async () => {
+  log("")
+  log("Mob programming session finished successfully with joukko.")
+  return "Mob programming session finished with joukko."
+}
+
 const finishWithAmend = async (mobBranchName) => {
+  await removeBranchFile()
+  await addChangesToStaging()
+  log("Amending previous commit.")
+  await amendCommit()
   try {
-    await removeBranchFile()
-    await addChangesToStaging()
-    log("Amending previous commit.")
-    await amendCommit()
     log("Forcefully pushing local commits to remote.")
     await pushToBranch(mobBranchName, ["--force"])
+    return finishSuccessfulFinish()
   } catch (error) {
     logWarning("Failed to forcefully push to remote.")
-    await recreateJoukkoBranchFile(mobBranchName)
     throw(error)
   }
 }
 
 const finishWithNewCommit = async (mobBranchName) => {
-  await askUserInput("New commit message to finish the session")
+  return await askUserInput("New commit message to finish the session")
     .then(async commitMessage => {
       await removeBranchFile()
       await addChangesToStaging()
@@ -78,6 +89,7 @@ const finishWithNewCommit = async (mobBranchName) => {
       try {
         log("Pushing local commits to remote.")
         await pushToBranch(mobBranchName)
+        return finishSuccessfulFinish()
       } catch (pushError) {
         logWarning("Failed to push to remote. Remote might have been updated since taking the reins.")
         const useTheForce = await askUserConfirmation("Would you like to force push?")
@@ -85,62 +97,66 @@ const finishWithNewCommit = async (mobBranchName) => {
           try {
             log("Forcefully pushing local commits to remote.")
             await pushToBranch(mobBranchName, ["--force"])
+            return finishSuccessfulFinish()
           } catch (forcePushError) {
             logWarning("Failed to force push to remote.")
-            await undoFinishingCommitAndRecreateJoukkoFile(mobBranchName)
-            abort()
+            await undoFinishingCommit()
+            throw(forcePushError)
           }
         } else {
           await undoFinishingCommitAndRecreateJoukkoFile(mobBranchName)
-          abort()
+          return abortSessionFinish()
         }
       }
     })
 }
 
+const finishWithChanges = async (mobBranchName) => {
+  const shouldAmend = await askUserConfirmation("Would you like to amend to the previous commit?")
+  if (shouldAmend) {
+    return await finishWithAmend(mobBranchName)
+  } else {
+    return await finishWithNewCommit(mobBranchName)
+  }
+}
+
 const finishWithoutChanges = async (mobBranchName) => {
   log("No uncommitted changes or untracked files found before joukko file removal.")
-  await removeBranchFile()
   const shouldAmend = await askUserConfirmation("Would you like to amend joukko file removal to the previous commit?")
   if (shouldAmend) {
-    await finishWithAmend(mobBranchName)
+    return await finishWithAmend(mobBranchName)
   } else {
-    await finishWithNewCommit(mobBranchName)
+    return await finishWithNewCommit(mobBranchName)
   }
 }
 
 const finish = async () => {
   log("Finishing mob programming session with joukko.")
-  await preCheckForFinishAndPassOk()
+  return await preCheckForFinishAndPassOk()
     .then(async preCheckIsOk => {
       if (!preCheckIsOk) {
-        return abort()
+        return abortSessionFinish()
       }   
 
+      let mobBranchName
       try {
         const previousCommitMessage = await getPreviousCommitMessage()
         log(`Previous commit message is '${previousCommitMessage}'`)
 
-        const mobBranchName = await readJoukkoFileBranch()
+        mobBranchName = await readJoukkoFileBranch()
 
         const changes = await hasChanges()
         const untracked = await hasUntracked()
         if (!changes && !untracked) {
-          await finishWithoutChanges()
+          return await finishWithoutChanges(mobBranchName)
         } else {
-          const shouldAmend = await askUserConfirmation("Would you like to amend to the previous commit?")
-          if (shouldAmend) {
-            await finishWithAmend(mobBranchName)
-          } else {
-            await finishWithNewCommit(mobBranchName)
-          }
+          return await finishWithChanges(mobBranchName)
         }
-        log("")
-        log("Mob programming session finished successfully with joukko.")
       } catch (error) {
         logError("Finishing the session failed.")
         logError(error)
-        return abort()
+        await recreateJoukkoBranchFile(mobBranchName)
+        return abortSessionFinish()
       }
     })
 }
