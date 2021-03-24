@@ -273,19 +273,12 @@ const joukkoFileFound = async () => {
 }
 
 const joukkoFileHasBranchName = async () => {
-  const joukkoFileContent = await readJoukkoFileContent()
-  if (joukkoFileContent && joukkoFileContent.trim() != "") {
-    try {
-      const joukkoFileJson = JSON.parse(joukkoFileContent)
-      const joukkoBranch = joukkoFileJson.branch
-      if (joukkoBranch && joukkoBranch.trim() != "") {
-        return true
-      } 
-    } catch (error) {
-      return false;
-    }
+  try {
+    const joukkoBranch = await readJoukkoFileBranch()
+    return !!joukkoBranch
+  } catch (error) {
+    return false
   }
-  return false
 }
 
 const preCheckForFinishAndPassOk = async () => {
