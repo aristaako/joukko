@@ -57,10 +57,14 @@ const getBranchNameFromRemotePath = remotePath => {
   return remotePath.split("/").pop()
 }
 
-const getBranchNamesForListing = (remoteBranches, showOptionOther) => {
+const getBranchNamesFromRemotePathBranchList = remoteBranches => {
   const remoteBranchNames = remoteBranches.all.map(remoteBranch => getBranchNameFromRemotePath(remoteBranch))
   const remoteBranchNamesSorted = remoteBranchNames.sort()
-  const branchNamesWithIndexes = remoteBranchNamesSorted.map((branchName, index) => `[\x1b[32m${index}\x1b[0m]: ${branchName}`)
+  return remoteBranchNamesSorted
+}
+
+const getBranchNamesForListing = (remoteBranchNames, showOptionOther) => {
+  const branchNamesWithIndexes = remoteBranchNames.map((branchName, index) => `[\x1b[32m${index}\x1b[0m]: ${branchName}`)
   const nextIndex = branchNamesWithIndexes.length
   let optionCount = branchNamesWithIndexes.length
   let branchNamesForListing
@@ -80,14 +84,17 @@ const getBranchNamesForListing = (remoteBranches, showOptionOther) => {
 const askBranchFromExisting = async (branchQuestion, allowDefaultAsProposed = false, showOptionOther = true) => {
   await improveKnowledgeOfRemoteBranches()
   const remoteBranches = await getRemoteBranches()
-  const branchNamesForListing = getBranchNamesForListing(remoteBranches, showOptionOther)
+  const remoteBranchNames = getBranchNamesFromRemotePathBranchList(remoteBranches)
+  const branchNamesForListing = getBranchNamesForListing(remoteBranchNames, showOptionOther)
+  log("")
+  log(`${branchQuestion}:`)
   branchNamesForListing.map(branchListing => log(branchListing))
   const branchNameOptionCount = branchNamesForListing.length
   const selection = await askOption(branchNameOptionCount)
-  if (selection == nextIndex) {
-    return await askUserForBranchName(branchQuestion, allowDefaultAsProposed)
+  if (selection == branchNameOptionCount) {
+    return await askUserForBranchName(branchQuestion, allowDefaultAsProposed, showOptionOther)
   } else {
-    return remoteBranchNamesSorted[selection]
+    return remoteBranchNames[selection]
   }
 }
 
@@ -105,7 +112,7 @@ const askOption = async optionCount => {
         return selection
       } else {
         logError("Invalid selection.")
-        return askOption(optionCount)
+        return await askOption(optionCount)
       }
     })
 }
@@ -525,6 +532,7 @@ module.exports = {
   createJoukkoBranchFile,
   getBranchNamesForListing,
   getBranchNameFromRemotePath,
+  getBranchNamesFromRemotePathBranchList,
   isBranchCurrentBranch,
   isCurrentBranchTheDefaultBranch,
   isSelectedOptionValid,

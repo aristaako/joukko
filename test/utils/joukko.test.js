@@ -31,6 +31,7 @@ const {
   createJoukkoBranchFile,
   getBranchNamesForListing,
   getBranchNameFromRemotePath,
+  getBranchNamesFromRemotePathBranchList,
   isBranchCurrentBranch,
   isCurrentBranchTheDefaultBranch,
   isSelectedOptionValid,
@@ -72,23 +73,44 @@ describe("joukko", () => {
       expect(getBranchNameFromRemotePath(remotePathAddNewFeature)).toEqual("add-new-feature")
     })
   })
+  describe("getBranchNamesFromRemotePathBranchList", () => {
+    test("returns branch name my-branch from the remote path branch", () => {
+      const remoteBranches = {
+        all: ["remote/my-branch"]
+      }
+      expect(getBranchNamesFromRemotePathBranchList(remoteBranches)).toEqual(["my-branch"])
+    })
+    test("returns list of remote path branches sorted alphabetically", () => {
+      const remoteBranches = {
+        all: [
+          "origin/main",
+          "origin/develop",
+          "origin/add-new-feature"
+        ]
+      }
+      const branchNames = [
+        "add-new-feature",
+        "develop",
+        "main"
+      ]
+      expect(getBranchNamesFromRemotePathBranchList(remoteBranches)).toEqual(branchNames)
+    })
+  })
   describe("getBranchNamesForListing", () => {
     const numberColorOn = "\x1b[32m"
     const numberColorOff = "\x1b[0m"
-    const remoteBranches = {
-      all: [
-        "origin/main",
-        "origin/develop",
-        "origin/add-new-feature"
+    const remoteBrancheNames = [
+        "add-new-feature",
+        "develop",
+        "main"
       ]
-    }
     test("returns only branch names when showOptionOther is false", () => { 
       const branchNamesForListing = [
         `[${numberColorOn}0${numberColorOff}]: add-new-feature`,
         `[${numberColorOn}1${numberColorOff}]: develop`,
         `[${numberColorOn}2${numberColorOff}]: main`
       ]
-      expect(getBranchNamesForListing(remoteBranches, false)).toEqual(branchNamesForListing)
+      expect(getBranchNamesForListing(remoteBrancheNames, false)).toEqual(branchNamesForListing)
     })
     test("returns branch names with option 'other' when showOptionOther is true", () => {
       const branchNamesForListing = [
@@ -97,7 +119,7 @@ describe("joukko", () => {
         `[${numberColorOn}2${numberColorOff}]: main`,
         `[${numberColorOn}3${numberColorOff}]: Other...`
       ]
-      expect(getBranchNamesForListing(remoteBranches, true)).toEqual(branchNamesForListing)
+      expect(getBranchNamesForListing(remoteBrancheNames, true)).toEqual(branchNamesForListing)
     })
   })
   describe("isSelectedOptionValid", () => {

@@ -1,5 +1,10 @@
 const readline = require("readline")
 
+const {
+  log,
+  logWarning,
+} = require("./log")
+
 const createReadLineInterface = () => {
   return readline.createInterface({
     input: process.stdin,
@@ -18,16 +23,16 @@ const getUserConfirmation = question => {
       rl.close()
       resolve(true)
     } else {
-      log("Please answer yes or no.")
+      logWarning("Please answer yes or no.")
       rl.close()
-      getUserConfirmation(question)
+      resolve(getUserConfirmation(question))
     }
   }))
 }
 
 const getUserInput = (question, defaultInput = "") => {
   const rl = createReadLineInterface()
-  return new Promise(resolve => rl.question(inputQuestion, userInput => {
+  return new Promise(resolve => rl.question(question, userInput => {
     if (userInput !== null && userInput.trim() !== "") {
       rl.close()
       resolve(userInput)
@@ -36,8 +41,9 @@ const getUserInput = (question, defaultInput = "") => {
         rl.close()
         resolve(defaultInput)
       } else {
-        log("Invalid input.")
-        getUserInput(question)
+        rl.close()
+        logWarning("Invalid input.")
+        resolve(getUserInput(question))
       }
     }
   }))

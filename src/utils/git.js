@@ -2,6 +2,7 @@ const simpleGit = require("simple-git")
 const git = simpleGit()
 
 const {
+  log,
   logGit,
   logGitMessages,
 } = require("../utils/log")
@@ -162,7 +163,7 @@ const hasUntracked = async () => {
 }
 
 const improveKnowledgeOfRemoteBranches = async () => {
-  console.log("Improving knowledge of remote branches.")
+  log("Improving knowledge of remote branches.")
   // logGit("git remote update origin --prune")
   await git.remote(["update", "origin", "--prune"])
 }
@@ -200,12 +201,8 @@ const undoLatestCommit = async () => {
 
 const updateBranchWithPullRebase = async branchName => {
   logGit(`git pull origin ${branchName}:${branchName} --rebase`)
-  const pullResponse = await git.pull("origin", `${branchName}:${branchName}`, ["--rebase"])
-  console.log("pullResponse")
-  console.log(pullResponse)
-  console.log("pullResponse")
+  await git.pull("origin", `${branchName}:${branchName}`, ["--rebase"])
 }
-
 
 module.exports = {
   abortMerge,
