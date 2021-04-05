@@ -3,6 +3,7 @@ const { finish } = require("./operations/finish")
 const { pass } = require("./operations/pass")
 const { start } = require("./operations/start")
 const { take } = require("./operations/take")
+const { rename } = require("./operations/rename")
 const { log, logError, logGuide } = require("./utils/log")
 
 const acceptedArguments = [
@@ -10,6 +11,7 @@ const acceptedArguments = [
   "take",
   "pass",
   "finish",
+  "rename",
   "help"
 ]
 
@@ -22,6 +24,7 @@ const help = () => {
   logArgument("pass   ", "Ends the current driver's turn i.e. 'passes the torch'.")
   logArgument("take   ", "Sets up the new driver's turn i.e. 'takes the reins'.")
   logArgument("finish ", "Finishes the mob programming session.")
+  logArgument("rename ", "Renames current branch and updates joukko file branch.")
   logArgument("help   ", "Prints this help.")
   log("")
 }
@@ -46,6 +49,9 @@ const joukko = argument => {
         break;
       case "finish":
         finish()
+        break;
+      case "rename":
+        rename()
         break;
       case "help":
         help()

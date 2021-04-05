@@ -2,7 +2,9 @@ const simpleGit = require("simple-git")
 const git = simpleGit()
 
 const {
+  log,
   logGit,
+  logGitMessages,
 } = require("../utils/log")
 
 const abortMerge = async () => {
@@ -31,6 +33,15 @@ const amendCommit = async () => {
   await git.commit(previousCommitMessage, ["--amend", "--no-edit"])
 }
 
+const checkIfBranchExists = async branchName => {
+  const branchExistsLocally = await checkIfBranchExistsLocally(branchName)
+  if (branchExistsLocally) {
+    return true
+  } else {
+    return await checkIfBranchExistsInRemote(branchName)
+  }
+}
+
 const checkIfBranchExistsInRemote = async branchName => {
   const remoteBranches = await getRemoteBranches()
   const branchExists = remoteBranches.all.includes(`origin/${branchName}`)
@@ -47,6 +58,7 @@ const checkoutBranch = async branchName => {
   logGit(`git checkout ${branchName}`)
   await git.checkout(branchName)
 }
+
 const checkoutNewBranch = async branchName => {
   logGit(`git branch ${branchName}`)
   await git.branch([branchName])
@@ -62,10 +74,6 @@ const createCommit = async message => {
 const deleteBranch = async branchName => {
   logGit(`git branch -D ${branchName}`)
   await git.deleteLocalBranch(branchName, true)
-}
-
-const getBranchNameFromRemotePath = remotePath => {
-  return remotePath.split("/").pop()
 }
 
 const getCurrentBranch = async () => {
@@ -155,7 +163,7 @@ const hasUntracked = async () => {
 }
 
 const improveKnowledgeOfRemoteBranches = async () => {
-  console.log("Improving knowledge of remote branches.")
+  log("Improving knowledge of remote branches.")
   // logGit("git remote update origin --prune")
   await git.remote(["update", "origin", "--prune"])
 }
@@ -166,7 +174,24 @@ const isGitDirectory = async () => {
 
 const pushTo = async (remote, branch, options = []) => {
   logGit(`git push ${remote} ${branch} ${options.toString()}`)
-  await git.push(remote, branch, options)
+  const response = await git.push(remote, branch, options)
+  const remoteMessages = response.remoteMessages
+  if (remoteMessages && remoteMessages.all && remoteMessages.all !== []) {
+    logGitMessages(remoteMessages.all)
+  }
+}
+
+const renameBranch = async (newBranchname) => {
+  try {
+    const branchAlreadyExists = await checkIfBranchExists(newBranchname)
+    if (branchAlreadyExists) {
+      throw(`Branch '${newBranchname}' already exists.`)
+    }
+    logGit(`git branch -m ${newBranchname}`)
+    await git.branch(["-m", newBranchname])
+  } catch (error) {
+    throw(error)
+  }
 }
 
 const undoLatestCommit = async () => {
@@ -176,12 +201,8 @@ const undoLatestCommit = async () => {
 
 const updateBranchWithPullRebase = async branchName => {
   logGit(`git pull origin ${branchName}:${branchName} --rebase`)
-  const pullResponse = await git.pull("origin", `${branchName}:${branchName}`, ["--rebase"])
-  console.log("pullResponse")
-  console.log(pullResponse)
-  console.log("pullResponse")
+  await git.pull("origin", `${branchName}:${branchName}`, ["--rebase"])
 }
-
 
 module.exports = {
   abortMerge,
@@ -189,13 +210,13 @@ module.exports = {
   addAllFiles,
   addFile,
   amendCommit,
+  checkIfBranchExists,
   checkIfBranchExistsInRemote,
   checkIfBranchExistsLocally,
   checkoutBranch,
   checkoutNewBranch,
   createCommit,
   deleteBranch,
-  getBranchNameFromRemotePath,
   getCurrentBranch,
   getDefaultBranch,
   getGitLog,
@@ -209,6 +230,7 @@ module.exports = {
   improveKnowledgeOfRemoteBranches,
   isGitDirectory,
   pushTo,
+  renameBranch,
   undoLatestCommit,
   updateBranchWithPullRebase,
 }
