@@ -36,7 +36,7 @@ const take = async () => {
       let joukkoMobBranch
       try {
         if (!joukkoFileWithBranchExists) {
-          joukkoMobBranch = await askBranchFromExisting("Name for the mob branch")
+          joukkoMobBranch = await askBranchFromExisting("Name for the mob branch", false, false)
           remoteUpdated = true
         } else {
           joukkoMobBranch = await readJoukkoFileBranch()
