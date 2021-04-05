@@ -242,10 +242,10 @@ const createJoukkoBranchFile = async (branchName, silent = false) => {
     const branchJson = { branch: branchName }
     createFileWithJson(repoRoot, JOUKKO_FILE, JSON.stringify(branchJson))
     if (!silent) {
-      log("Mob branch file created.")
+      log("Joukko branch file created.")
     }
   } catch (error) {
-    logWarning("Could not create mob branch file.")
+    logWarning("Could not create joukko branch file.")
     throw(error)
   }
 }

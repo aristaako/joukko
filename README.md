@@ -155,8 +155,13 @@ If checks pass, joukko renames the git branch first, the branch name in joukko f
 MIT. Read more from the [license](LICENSE) file.
 
 ## TODO
-- Ask credentials for git operations so it is not necessary to type them multiple times
-- Add support for multiple remotes
-- Improve logging
-- Combine prechecks
-- Maybe add the ability to change the name of the mob branch
+[ ] Add Quick Start guide  
+[ ] Ask credentials for git operations so it is not necessary to type them multiple times  
+[ ] When staging, show the files that git detects and ask if thats ok  
+[ ] Branch rename creates a commit  
+[ ] Ask if user wants to rename branch in remote too  
+[ ] Add support for multiple remotes  
+[ ] Flowcharts  
+[ ] Improve logging  
+[ ] Combine prechecks   
+[ ] Refactor

@@ -10,7 +10,6 @@ const {
 } = require("../utils/log")
 
 const abortSessionRename = (message = "Local joukko branch not renamed.") => {
-  log(message)
   return abort(message)
 }
 
