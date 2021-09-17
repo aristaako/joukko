@@ -17,7 +17,7 @@
   },
   "homepage": "https://github.com/aristaako/joukko#readme",
   "dependencies": {
-    "simple-git": "2.31.0"
+    "simple-git": "2.45.1"
   },
   "scripts": {
     "test": "jest"
